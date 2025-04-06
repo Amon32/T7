@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAD OS - Sistema Operativo de Diseño</title>
+    <style>
+        /* Reset y estilos base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Barra de tareas */
+        .taskbar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            height: 40px;
+            background-color: #252526;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            z-index: 1000;
+            border-top: 1px solid #3c3c3c;
+        }
+        
+        .start-button {
+            background-color: #007acc;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .taskbar-icons {
+            display: flex;
+            gap: 15px;
+            margin-left: 20px;
+        }
+        
+        .taskbar-icon {
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+        }
+        
+        /* Ventana principal */
+        .desktop {
+            height: calc(100vh - 40px);
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+        }
+        
+        /* Panel de herramientas */
+        .tool-panel {
+            background-color: #252526;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tool-group {
+            margin-bottom: 20px;
+        }
+        
+        .tool-group h3 {
+            margin-bottom: 10px;
+            color: #007acc;
+            font-size: 14px;
+            border-bottom: 1px solid #3c3c3c;
+            padding-bottom: 5px;
+        }
+        
+        .tools {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .tool {
+            background-color: #333;
+            border: 1px solid #444;
+            border-radius: 4px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tool:hover {
+            background-color: #007acc;
+            border-color: #0090ff;
+        }
+        
+        .tool.active {
+            background-color: #007acc;
+            border-color: #0090ff;
+            box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.5);
+        }
+        
+        /* Área de dibujo */
+        .canvas-container {
+            position: relative;
+            background-color: #252526;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .canvas-tabs {
+            display: flex;
+            background-color: #2d2d2d;
+            padding: 5px 10px 0;
+            border-bottom: 1px solid #3c3c3c;
+        }
+        
+        .canvas-tab {
+            padding: 8px 15px;
+            background-color: #2d2d2d;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            margin-right: 5px;
+            font-size: 14px;
+        }
+        
+        .canvas-tab.active {
+            background-color: #1e1e1e;
+            border-color: #3c3c3c;
+            color: #0090ff;
+        }
+        
+        .canvas-content {
+            position: relative;
+            height: calc(100% - 38px);
+        }
+        
+        canvas {
+            background-color: #1e1e1e;
+            display: block;
+        }
+        
+        #canvas2d, #canvasIso, #canvas3d {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Menú de inicio */
+        .start-menu {
+            position: absolute;
+            bottom: 50px;
+            left: 10px;
+            width: 350px;
+            background-color: #252526;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1001;
+            overflow: hidden;
+        }
+        
+        .start-menu-header {
+            background-color: #007acc;
+            color: white;
+            padding: 10px 15px;
+            font-weight: bold;
+        }
+        
+        .start-menu-items {
+            padding: 10px 0;
+        }
+        
+        .start-menu-item {
+            padding: 8px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        
+        .start-menu-item:hover {
+            background-color: #37373d;
+        }
+        
+        .start-menu-item i {
+            margin-right: 10px;
+            color: #007acc;
+        }
+        
+        /* Propiedades */
+        .properties-panel {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            width: 250px;
+            background-color: #252526;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            display: none;
+            z-index: 999;
+        }
+        
+        .properties-panel h3 {
+            margin-bottom: 15px;
+            color: #007acc;
+            font-size: 14px;
+            border-bottom: 1px solid #3c3c3c;
+            padding-bottom: 5px;
+        }
+        
+        .property-group {
+            margin-bottom: 15px;
+        }
+        
+        .property-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #b0b0b0;
+        }
+        
+        .property-group input, .property-group select {
+            width: 100%;
+            padding: 5px;
+            background-color: #333;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #e0e0e0;
+        }
+        
+        /* Modal de nuevo archivo */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1002;
+            display: none;
+        }
+        
+        .modal-content {
+            background-color: #252526;
+            border-radius: 8px;
+            width: 400px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-header {
+            margin-bottom: 20px;
+            color: #007acc;
+            font-size: 18px;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .modal-button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .modal-button.primary {
+            background-color: #007acc;
+            color: white;
+        }
+        
+        .modal-button.secondary {
+            background-color: #333;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="desktop">
+        <div class="tool-panel">
+            <div class="tool-group">
+                <h3>Archivo</h3>
+                <div class="tools">
+                    <div class="tool" id="new-file">Nuevo</div>
+                    <div class="tool" id="open-file">Abrir</div>
+                    <div class="tool" id="save-file">Guardar</div>
+                </div>
+            </div>
+            
+            <div class="tool-group">
+                <h3>Dibujo 2D</h3>
+                <div class="tools">
+                    <div class="tool active" id="line-tool">Línea</div>
+                    <div class="tool" id="rect-tool">Rectángulo</div>
+                    <div class="tool" id="circle-tool">Círculo</div>
+                    <div class="tool" id="polygon-tool">Polígono</div>
+                    <div class="tool" id="text-tool">Texto</div>
+                    <div class="tool" id="select-tool">Seleccionar</div>
+                </div>
+            </div>
+            
+            <div class="tool-group">
+                <h3>Isométrico</h3>
+                <div class="tools">
+                    <div class="tool" id="iso-cube">Cubo</div>
+                    <div class="tool" id="iso-cylinder">Cilindro</div>
+                    <div class="tool" id="iso-pyramid">Pirámide</div>
+                </div>
+            </div>
+            
+            <div class="tool-group">
+                <h3>3D</h3>
+                <div class="tools">
+                    <div class="tool" id="3d-box">Caja</div>
+                    <div class="tool" id="3d-sphere">Esfera</div>
+                    <div class="tool" id="3d-cylinder">Cilindro</div>
+                    <div class="tool" id="3d-cone">Cono</div>
+                </div>
+            </div>
+            
+            <div class="tool-group">
+                <h3>Propiedades</h3>
+                <div class="tools">
+                    <div class="tool" id="color-picker">Color</div>
+                    <div class="tool" id="line-width">Grosor</div>
+                    <div class="tool" id="properties-tool">Propiedades</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <div class="canvas-tabs">
+                <div class="canvas-tab active" data-canvas="2d">2D</div>
+                <div class="canvas-tab" data-canvas="iso">Isométrico</div>
+                <div class="canvas-tab" data-canvas="3d">3D</div>
+            </div>
+            <div class="canvas-content">
+                <canvas id="canvas2d"></canvas>
+                <canvas id="canvasIso"></canvas>
+                <canvas id="canvas3d"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="taskbar">
+        <button class="start-button" id="start-button">Inicio</button>
+        <div class="taskbar-icons">
+            <div class="taskbar-icon">
+                <span>2D</span>
+            </div>
+            <div class="taskbar-icon">
+                <span>ISO</span>
+            </div>
+            <div class="taskbar-icon">
+                <span>3D</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="start-menu" id="start-menu">
+        <div class="start-menu-header">CAD OS v1.0</div>
+        <div class="start-menu-items">
+            <div class="start-menu-item" id="menu-new">
+                <i>📄</i> Nuevo documento
+            </div>
+            <div class="start-menu-item" id="menu-open">
+                <i>📂</i> Abrir archivo
+            </div>
+            <div class="start-menu-item" id="menu-save">
+                <i>💾</i> Guardar
+            </div>
+            <div class="start-menu-item" id="menu-properties">
+                <i>⚙️</i> Propiedades
+            </div>
+            <div class="start-menu-item" id="menu-help">
+                <i>❓</i> Ayuda
+            </div>
+            <div class="start-menu-item" id="menu-exit">
+                <i>🚪</i> Salir
+            </div>
+        </div>
+    </div>
+    
+    <div class="properties-panel" id="properties-panel">
+        <h3>Propiedades</h3>
+        <div class="property-group">
+            <label for="prop-color">Color</label>
+            <input type="color" id="prop-color" value="#0090ff">
+        </div>
+        <div class="property-group">
+            <label for="prop-linewidth">Grosor de línea</label>
+            <input type="range" id="prop-linewidth" min="1" max="10" value="2">
+        </div>
+        <div class="property-group">
+            <label for="prop-fill">Relleno</label>
+            <select id="prop-fill">
+                <option value="none">Ninguno</option>
+                <option value="solid">Sólido</option>
+                <option value="pattern">Patrón</option>
+            </select>
+        </div>
+        <div class="property-group">
+            <label for="prop-opacity">Opacidad</label>
+            <input type="range" id="prop-opacity" min="0" max="100" value="100">
+        </div>
+    </div>
+    
+    <div class="modal" id="new-file-modal">
+        <div class="modal-content">
+            <div class="modal-header">Nuevo documento</div>
+            <div class="modal-body">
+                <div class="property-group">
+                    <label for="new-file-type">Tipo de documento</label>
+                    <select id="new-file-type">
+                        <option value="2d">Dibujo 2D</option>
+                        <option value="iso">Dibujo isométrico</option>
+                        <option value="3d">Modelo 3D</option>
+                    </select>
+                </div>
+                <div class="property-group">
+                    <label for="new-file-name">Nombre</label>
+                    <input type="text" id="new-file-name" placeholder="Documento sin título">
+                </div>
+                <div class="property-group">
+                    <label for="new-file-template">Plantilla</label>
+                    <select id="new-file-template">
+                        <option value="blank">En blanco</option>
+                        <option value="a4">A4 (210x297mm)</option>
+                        <option value="a3">A3 (297x420mm)</option>
+                        <option value="custom">Personalizado</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-button secondary" id="cancel-new">Cancelar</button>
+                <button class="modal-button primary" id="create-new">Crear</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Variables globales
+        let currentTool = 'line';
+        let currentColor = '#0090ff';
+        let lineWidth = 2;
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let currentCanvas = '2d';
+        
+        // Inicialización al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Obtener referencias a los elementos del DOM
+            const canvas2d = document.getElementById('canvas2d');
+            const canvasIso = document.getElementById('canvasIso');
+            const canvas3d = document.getElementById('canvas3d');
+            const ctx2d = canvas2d.getContext('2d');
+            const ctxIso = canvasIso.getContext('2d');
+            
+            // Configurar tamaños de los canvas
+            function resizeCanvases() {
+                const container = document.querySelector('.canvas-content');
+                const width = container.clientWidth;
+                const height = container.clientHeight;
+                
+                canvas2d.width = width;
+                canvas2d.height = height;
+                canvasIso.width = width;
+                canvasIso.height = height;
+                canvas3d.width = width;
+                canvas3d.height = height;
+                
+                // Dibujar contenido inicial
+                drawInitialContent();
+            }
+            
+            // Dibujar contenido inicial
+            function drawInitialContent() {
+                // Dibujar rejilla en 2D
+                drawGrid(ctx2d, canvas2d.width, canvas2d.height, 20, '#333');
+                
+                // Dibujar rejilla isométrica
+                drawIsoGrid(ctxIso, canvasIso.width, canvasIso.height, 30, '#333');
+                
+                // Dibujar texto de bienvenida
+                ctx2d.font = '24px Arial';
+                ctx2d.fillStyle = '#007acc';
+                ctx2d.textAlign = 'center';
+                ctx2d.fillText('CAD OS - Dibujo 2D', canvas2d.width/2, canvas2d.height/2);
+                
+                ctxIso.font = '24px Arial';
+                ctxIso.fillStyle = '#007acc';
+                ctxIso.textAlign = 'center';
+                ctxIso.fillText('CAD OS - Dibujo Isométrico', canvasIso.width/2, canvasIso.height/2);
+            }
+            
+            // Dibujar rejilla
+            function drawGrid(ctx, width, height, size, color) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 0.5;
+                
+                // Líneas verticales
+                for (let x = 0; x <= width; x += size) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, height);
+                    ctx.stroke();
+                }
+                
+                // Líneas horizontales
+                for (let y = 0; y <= height; y += size) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(width, y);
+                    ctx.stroke();
+                }
+            }
+            
+            // Dibujar rejilla isométrica
+            function drawIsoGrid(ctx, width, height, size, color) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 0.5;
+                
+                // Líneas verticales
+                for (let x = 0; x <= width; x += size) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, height);
+                    ctx.stroke();
+                }
+                
+                // Líneas diagonales (izquierda)
+                for (let d = 0; d <= width + height; d += size) {
+                    ctx.beginPath();
+                    ctx.moveTo(d, 0);
+                    ctx.lineTo(0, d);
+                    ctx.stroke();
+                }
+                
+                // Líneas diagonales (derecha)
+                for (let d = -height; d <= width; d += size) {
+                    ctx.beginPath();
+                    ctx.moveTo(d, 0);
+                    ctx.lineTo(d + height, height);
+                    ctx.stroke();
+                }
+            }
+            
+            // Event listeners para herramientas 2D
+            document.getElementById('line-tool').addEventListener('click', () => setTool('line'));
+            document.getElementById('rect-tool').addEventListener('click', () => setTool('rect'));
+            document.getElementById('circle-tool').addEventListener('click', () => setTool('circle'));
+            document.getElementById('polygon-tool').addEventListener('click', () => setTool('polygon'));
+            document.getElementById('text-tool').addEventListener('click', () => setTool('text'));
+            document.getElementById('select-tool').addEventListener('click', () => setTool('select'));
+            
+            // Event listeners para herramientas isométricas
+            document.getElementById('iso-cube').addEventListener('click', () => setTool('iso-cube'));
+            document.getElementById('iso-cylinder').addEventListener('click', () => setTool('iso-cylinder'));
+            document.getElementById('iso-pyramid').addEventListener('click', () => setTool('iso-pyramid'));
+            
+            // Event listeners para herramientas 3D
+            document.getElementById('3d-box').addEventListener('click', () => setTool('3d-box'));
+            document.getElementById('3d-sphere').addEventListener('click', () => setTool('3d-sphere'));
+            document.getElementById('3d-cylinder').addEventListener('click', () => setTool('3d-cylinder'));
+            document.getElementById('3d-cone').addEventListener('click', () => setTool('3d-cone'));
+            
+            // Event listeners para propiedades
+            document.getElementById('color-picker').addEventListener('click', () => {
+                document.getElementById('prop-color').click();
+            });
+            
+            document.getElementById('line-width').addEventListener('click', () => {
+                document.getElementById('prop-linewidth').focus();
+            });
+            
+            document.getElementById('properties-tool').addEventListener('click', togglePropertiesPanel);
+            
+            // Event listeners para menú de inicio
+            document.getElementById('start-button').addEventListener('click', toggleStartMenu);
+            document.getElementById('menu-new').addEventListener('click', showNewFileModal);
+            document.getElementById('menu-properties').addEventListener('click', togglePropertiesPanel);
+            
+            // Event listeners para modal de nuevo archivo
+            document.getElementById('new-file').addEventListener('click', showNewFileModal);
+            document.getElementById('create-new').addEventListener('click', createNewFile);
+            document.getElementById('cancel-new').addEventListener('click', hideNewFileModal);
+            
+            // Event listeners para pestañas
+            const tabs = document.querySelectorAll('.canvas-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentCanvas = tab.dataset.canvas;
+                    showCanvas(currentCanvas);
+                });
+            });
+            
+            // Event listeners para cambio de propiedades
+            document.getElementById('prop-color').addEventListener('change', (e) => {
+                currentColor = e.target.value;
+            });
+            
+            document.getElementById('prop-linewidth').addEventListener('input', (e) => {
+                lineWidth = e.target.value;
+            });
+            
+            // Event listeners para dibujo en canvas 2D
+            canvas2d.addEventListener('mousedown', startDrawing);
+            canvas2d.addEventListener('mousemove', draw);
+            canvas2d.addEventListener('mouseup', stopDrawing);
+            canvas2d.addEventListener('mouseout', stopDrawing);
+            
+            // Configuración inicial
+            resizeCanvases();
+            window.addEventListener('resize', resizeCanvases);
+            showCanvas('2d');
+            
+            // Inicializar Three.js para el canvas 3D (simplificado)
+            init3DCanvas();
+        });
+        
+        // Función para establecer la herramienta actual
+        function setTool(tool) {
+            currentTool = tool;
+            
+            // Actualizar estado activo de los botones
+            document.querySelectorAll('.tool').forEach(el => el.classList.remove('active'));
+            
+            // Activar el botón correspondiente
+            let toolId = '';
+            switch(tool) {
+                case 'line': toolId = 'line-tool'; break;
+                case 'rect': toolId = 'rect-tool'; break;
+                case 'circle': toolId = 'circle-tool'; break;
+                case 'polygon': toolId = 'polygon-tool'; break;
+                case 'text': toolId = 'text-tool'; break;
+                case 'select': toolId = 'select-tool'; break;
+                case 'iso-cube': toolId = 'iso-cube'; break;
+                case 'iso-cylinder': toolId = 'iso-cylinder'; break;
+                case 'iso-pyramid': toolId = 'iso-pyramid'; break;
+                case '3d-box': toolId = '3d-box'; break;
+                case '3d-sphere': toolId = '3d-sphere'; break;
+                case '3d-cylinder': toolId = '3d-cylinder'; break;
+                case '3d-cone': toolId = '3d-cone'; break;
+            }
+            
+            if (toolId) document.getElementById(toolId).classList.add('active');
+        }
+        
+        // Funciones para el menú de inicio
+        function toggleStartMenu() {
+            const menu = document.getElementById('start-menu');
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        // Funciones para el panel de propiedades
+        function togglePropertiesPanel() {
+            const panel = document.getElementById('properties-panel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        // Funciones para el modal de nuevo archivo
+        function showNewFileModal() {
+            document.getElementById('new-file-modal').style.display = 'flex';
+            document.getElementById('start-menu').style.display = 'none';
+        }
+        
+        function hideNewFileModal() {
+            document.getElementById('new-file-modal').style.display = 'none';
+        }
+        
+        function createNewFile() {
+            const type = document.getElementById('new-file-type').value;
+            const name = document.getElementById('new-file-name').value || 'Documento sin título';
+            const template = document.getElementById('new-file-template').value;
+            
+            // Aquí iría la lógica para crear un nuevo archivo
+            console.log(`Creando nuevo archivo: ${name}, Tipo: ${type}, Plantilla: ${template}`);
+            
+            // Mostrar mensaje de éxito
+            alert(`Nuevo documento "${name}" creado como ${type}`);
+            
+            hideNewFileModal();
+        }
+        
+        // Funciones para mostrar/ocultar canvas
+        function showCanvas(canvas) {
+            document.getElementById('canvas2d').style.display = 'none';
+            document.getElementById('canvasIso').style.display = 'none';
+            document.getElementById('canvas3d').style.display = 'none';
+            
+            document.getElementById(`canvas${canvas}`).style.display = 'block';
+        }
+        
+        // Funciones para dibujo 2D
+        function startDrawing(e) {
+            if (currentCanvas !== '2d') return;
+            
+            isDrawing = true;
+            const canvas = document.getElementById('canvas2d');
+            const rect = canvas.getBoundingClientRect();
+            lastX = e.clientX - rect.left;
+            lastY = e.clientY - rect.top;
+        }
+        
+        function draw(e) {
+            if (!isDrawing || currentCanvas !== '2d') return;
+            
+            const canvas = document.getElementById('canvas2d');
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+            
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(currentX, currentY);
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            
+            lastX = currentX;
+            lastY = currentY;
+        }
+        
+        function stopDrawing() {
+            isDrawing = false;
+        }
+        
+        // Inicialización simplificada de Three.js para el canvas 3D
+        function init3DCanvas() {
+            const canvas = document.getElementById('canvas3d');
+            
+            // Simulamos que hay un renderizador 3D
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1e1e1e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.font = '24px Arial';
+            ctx.fillStyle = '#007acc';
+            ctx.textAlign = 'center';
+            ctx.fillText('CAD OS - Vista 3D', canvas.width/2, canvas.height/2);
+            ctx.font = '16px Arial';
+            ctx.fillText('(Renderizador 3D se inicializaría aquí)', canvas.width/2, canvas.height/2 + 30);
+        }
+    </script>
+</body>
+</html>
